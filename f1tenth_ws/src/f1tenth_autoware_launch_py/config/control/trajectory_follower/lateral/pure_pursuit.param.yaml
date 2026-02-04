@@ -1,0 +1,16 @@
+/**:
+  ros__parameters:
+    ld_velocity_ratio: 24.0
+    ld_lateral_error_ratio: 36.0
+    ld_curvature_ratio: 12.0
+    long_ld_lateral_error_threshold: 0.5
+    min_lookahead_distance: 1.0
+    max_lookahead_distance: 2.0
+    converged_steer_rad: 0.1
+    reverse_min_lookahead_distance: 0.7
+    prediction_ds: 0.3
+    prediction_distance_length: 2.5
+    resampling_ds: 0.1
+    curvature_calculation_distance: 4.0
+    enable_path_smoothing: false
+    path_filter_moving_ave_num: 25
