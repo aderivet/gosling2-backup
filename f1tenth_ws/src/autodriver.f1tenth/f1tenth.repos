@@ -1,0 +1,62 @@
+repositories:
+  f1tenth_system:
+    type: git
+    url: https://github.com/privvyledge/f1tenth_system.git
+    version: humble-devel
+
+  nonpersistent_voxel_layer:
+    type: git
+    url: https://github.com/SteveMacenski/nonpersistent_voxel_layer.git
+    version: 2.4.0
+  f1tenth_launch:
+    type: git
+    url: https://github.com/privvyledge/f1tenth_launch.git
+    version: humble-dev
+  trajectory_following_ros2:
+    type: git
+    url: https://github.com/privvyledge/trajectory_following_ros2.git
+    version: master
+  f1tenth_autoware_launch_py:
+    type: git
+    url: https://github.com/privvyledge/f1tenth_autoware_launch_py.git
+    version: master
+  laser_filters:
+    type: git
+    url: https://github.com/ros-perception/laser_filters.git
+    version: ros2
+  depthimage_to_laserscan:
+    type: git
+    url: https://github.com/marcusvinicius178/depthimage_to_laserscan.git
+    version: fix-QoS-issue
+  rf2o_laser_odometry:
+    type: git
+    url: https://github.com/MAPIRlab/rf2o_laser_odometry.git
+    version: ros2
+  ydlidar_ros2_driver:
+    type: git
+    url: https://github.com/YDLIDAR/ydlidar_ros2_driver.git
+    version: humble
+  ros_images_to_files:
+    type: git
+    url: https://github.com/privvyledge/ros_images_to_files.git
+    version: master
+  autodriver_fake_obstacle_publisher:
+    type: git
+    url: https://github.com/privvyledge/autodriver_fake_obstacle_publisher.git
+    version: master
+  autodriver_image_object_detection:
+    type: git
+    url: https://github.com/privvyledge/autodriver_image_object_detection.git
+    version: master
+  autodriver_pointcloud_object_detection:
+    type: git
+    url: https://github.com/privvyledge/autodriver_pointcloud_object_detection.git
+    version: master
+  autodriver_pointcloud_preprocessor:
+    type: git
+    url: https://github.com/privvyledge/autodriver_pointcloud_preprocessor.git
+    version: master
+  autodriver_icp_localizer:
+    type: git
+    url: https://github.com/privvyledge/autodriver_icp_localizer.git
+    version: master

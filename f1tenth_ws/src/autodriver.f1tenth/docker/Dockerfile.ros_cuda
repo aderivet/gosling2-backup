@@ -1,0 +1,383 @@
+# General tutorial: https://hackmd.io/@johnnynunez/SJqAMlzg6
+# To build Pytorch (https://qengineering.eu/install-pytorch-on-jetson-nano.html | https://github.com/dusty-nv/jetson-containers/blob/master/packages/pytorch/build.sh | https://github.com/hillct/jetson-containers-extra/blob/develop/Dockerfile)
+# ros:humble-ros-base-jammy, ros:humble-perception-jammy
+#FROM ubuntu:jammy
+FROM ros:humble-ros-base-jammy
+#FROM ros:humble-perception-jammy
+
+# Set up the shell
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+ENV DEBIAN_FRONTEND=noninteractive
+ARG DEBCONF_NONINTERACTIVE_SEEN=true
+ENV TZ=America/New_York
+
+ENV NVIDIA_DRIVER_CAPABILITIES=all
+ENV NVIDIA_VISIBLE_DEVICES=all
+
+ARG ROS_VERSION="ROS2"
+ARG ROS_DISTRO="humble"
+ENV ROS_DISTRO=${ROS_DISTRO}
+ENV ROS_ROOT=/opt/ros/${ROS_DISTRO}
+ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+
+## For Jetpack 6.2 L4T 36.4.3
+### For Pytorch wheels check (
+###    https://docs.nvidia.com/deeplearning/frameworks/install-pytorch-jetson-platform-release-notes/pytorch-jetson-rel.html#pytorch-jetson-rel and
+###    https://developer.download.nvidia.com/compute/redist/jp/ or
+###    https://docs.ultralytics.com/guides/nvidia-jetson/#install-pytorch-and-torchvision
+###    Also see this github issue for the latest: https://github.com/ultralytics/ultralytics/issues/18829
+
+### For CuDNN (https://developer.nvidia.com/cudnn-downloads?target_os=Linux&target_arch=aarch64-jetson&Compilation=Native&Distribution=Ubuntu&target_version=22.04&target_type=deb_local)
+ARG L4T_VERSION="36.4"
+ARG CUDA=12-6
+ARG cudnn_major_version=9
+ARG cudnn_version=9.3.0
+ARG tensorrt_major_version=10
+ARG tensorrt_version=10.3.0.30
+
+## Torch v2.6.0 (From Jetson AI Labs pypi. See https://forums.developer.nvidia.com/t/runtimeerror-operator-torchvision-nms-does-not-exist/317099/6 for fixes)
+ARG TORCH_INSTALL=https://pypi.jetson-ai-lab.dev/jp6/cu126/+f/a86/1895294d90440/torch-2.6.0rc1-cp310-cp310-linux_aarch64.whl#sha256=a861895294d90440f2cdbd863d3fd5407fcc346f819665f3a63d90dfcf41a5b0
+ARG TORCHVISION_INSTALL=https://pypi.jetson-ai-lab.dev/jp6/cu126/+f/5f9/67f920de3953f/torchvision-0.20.0-cp310-cp310-linux_aarch64.whl#sha256=5f967f920de3953f2a39d95154b1feffd5ccc06b4589e51540dc070021a9adb9
+ARG TENSORFLOW_INSTALL=https://pypi.jetson-ai-lab.dev/jp6/cu126/+f/311/d1539318c172c/tensorflow-2.18.0-cp310-cp310-linux_aarch64.whl#sha256=311d1539318c172c2e8819422f6d1122cff0328292f5b24e7480d6632c07b732
+
+### Torch v2.5.0. For now use Jetpack 6.1 version until Jetpack 6.2 wheel is released
+#ARG TORCH_INSTALL=https://developer.download.nvidia.com/compute/redist/jp/v61/pytorch/torch-2.5.0a0+872d972e41.nv24.08.17622132-cp310-cp310-linux_aarch64.whl
+## Torch v2.3.0 + CUDA 12.12
+
+### For Jetpack 6.0 DeveloperPreview L4T 36.2.0 and Jetpack 6.0 ProductionRelease 36.3.0
+##ARG L4T_VERSION="36.2"
+##ARG TORCH_INSTALL=https://developer.download.nvidia.com/compute/redist/jp/v60dp/pytorch/torch-2.2.0a0+81ea7a4.nv24.01-cp310-cp310-linux_aarch64.whl
+##ARG TENSORFLOW_INSTALL=https://developer.download.nvidia.com/compute/redist/jp/v60dp/tensorflow/tensorflow-2.14.0+nv23.11-cp310-cp310-linux_aarch64.whl
+#ARG L4T_VERSION="36.3"
+#ARG CUDA=12-2
+#ARG cudnn_major_version=8
+#ARG cudnn_version=8.9.4.25-1+cuda12.2
+#ARG tensorrt_version=8.6.2.3-1+cuda12.2
+### Torch v2.2.0
+##ARG TORCH_INSTALL=https://developer.download.nvidia.com/compute/redist/jp/v60dp/pytorch/torch-2.2.0a0+6a974be.nv23.11-cp310-cp310-linux_aarch64.whl
+### Torch v2.3.0 + CUDA 12.12
+#ARG TORCH_INSTALL=https://nvidia.box.com/shared/static/mp164asf3sceb570wvjsrezk1p4ftj8t.whl
+#ARG TORCHVISION_INSTALL=https://nvidia.box.com/shared/static/xpr06qe6ql3l6rj22cu3c45tz1wzi36p.whl
+#ARG TENSORFLOW_INSTALL=https://developer.download.nvidia.com/compute/redist/jp/v60/tensorflow/tensorflow-2.15.0+nv24.05-cp310-cp310-linux_aarch64.whl
+
+######### Jetpack 5.1.4 L4T 35.4.1
+#ARG L4T_VERSION="35.4"
+## Torch links: https://forums.developer.nvidia.com/t/pytorch-for-jetson/72048
+#ARG CUDA=11-8
+#ARG cudnn_version=8.6.0.166-1+cuda11.4
+#ARG tensorrt_version=8.5.2-1+cuda11.4
+#ARG TORCH_INSTALL=https://developer.download.nvidia.cn/compute/redist/jp/v512/pytorch/torch-2.1.0a0+41361538.nv23.06-cp38-cp38-linux_aarch64.whl
+#ARG TENSORFLOW_INSTALL=https://developer.download.nvidia.com/compute/redist/jp/v51/tensorflow/tensorflow-2.11.0+nv23.01-cp38-cp38-linux_aarch64.whl
+
+# Install Sudo
+RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install -yq sudo tzdata && \
+    ln -fns /usr/share/zoneinfo/${TZ} /etc/localtime && echo $TZ > /etc/timezone && \
+    dpkg-reconfigure -f noninteractive tzdata
+
+# Install packages
+RUN sudo apt-get update -y && DEBIAN_FRONTEND="noninteractive" sudo apt-get install -y --no-install-recommends \
+    sudo \
+    software-properties-common \
+    git \
+    curl \
+    wget \
+    less \
+    zstd \
+    udev \
+    unzip \
+    build-essential \
+    apt-transport-https \
+    binutils \
+    xz-utils \
+    ca-certificates \
+    lsb-release \
+    gnupg2 \
+    pkg-config \
+    swig \
+    libpython3-dev \
+    python3-dev \
+    python3 \
+    python3-pip \
+    python3-setuptools \
+#    python3-numpy \
+    python3-rosdep \
+#    python3-matplotlib \
+#    python3-pil \
+    python3-yaml \
+    python3-tk \
+    python3-pyqt5 \
+    python3-bloom \
+    libssl-dev && \
+    sudo rm -rf /var/lib/apt/lists/*
+
+RUN python3 -m pip install -U \
+    Cython \
+    pymongo \
+    wheel \
+    scikit-learn \
+    ninja \
+    networkx \
+    numpy \
+    numpy-quaternion \
+    pyyaml \
+#    "setuptools_scm>=6.2" \
+    trimesh \
+    "yourdfpy>=0.0.53" \
+    "warp-lang>=0.9.0" \
+    "scipy>=1.7.0" \
+    tqdm \
+    importlib_resources
+
+RUN sudo apt-get update -y && DEBIAN_FRONTEND="noninteractive" sudo apt-get install -y --no-install-recommends \
+    autoconf \
+    bc \
+    build-essential \
+    cmake \
+    ffmpeg \
+    file \
+    g++ \
+    gcc \
+    gettext-base \
+    git \
+    gfortran \
+    hdf5-tools \
+    iputils-ping \
+    libatlas-base-dev \
+    libavcodec-dev \
+    libavdevice-dev \
+    libavfilter-dev \
+    libavformat-dev \
+    libavutil-dev \
+    libblas-dev \
+    libbz2-dev \
+    libc++-dev \
+    libcgal-dev \
+    libeigen3-dev \
+    libffi-dev \
+    libfreeimage-dev \
+    libfreetype6-dev \
+    libglew-dev \
+    libgflags-dev \
+    libgoogle-glog-dev \
+    libgtk-3-dev \
+    libgtk2.0-dev \
+    libhdf5-dev \
+    libjpeg-dev \
+    libjpeg-turbo8-dev \
+    libjpeg8-dev \
+    liblapack-dev \
+    liblapacke-dev \
+    liblzma-dev \
+    libncurses5-dev \
+    libncursesw5-dev \
+    libomp-dev \
+    libopenblas-dev \
+    libopenexr-dev \
+    libopenjp2-7 \
+    libopenjp2-7-dev \
+    libopenmpi-dev \
+    libpng-dev \
+    libpostproc-dev \
+    libprotobuf-dev \
+    libreadline-dev \
+    libsndfile1 \
+    libsqlite3-dev \
+    libssl-dev \
+    libswresample-dev \
+    libswscale-dev \
+    libtbb-dev \
+    libtbb2 \
+    libtesseract-dev \
+    libtiff-dev \
+    libv4l-dev \
+    libwebp-dev \
+    libx264-dev \
+    libxine2-dev \
+    libxslt1-dev \
+    libxvidcore-dev \
+    libxml2-dev \
+    locales \
+    moreutils \
+#    openssl \
+    pkg-config \
+    python3-dev \
+#    python3-numpy \
+    python3-pip \
+#    python3-matplotlib \
+    qv4l2 \
+    rsync \
+    scons \
+    v4l-utils \
+    zlib1g-dev \
+    zip \
+    libopenblas-dev \
+    libopenblas-base \
+    ubuntu-restricted-extras && \
+    sudo rm -rf /var/lib/apt/lists/*
+
+# todo: downgrade python3 to 3.9 to use python3-libnvinfer python3-libnvinfer-dev
+RUN python3 -m pip install --upgrade pip setuptools
+
+## For Pytorch
+#RUN python3 -m pip install numpy=="1.26.1"
+
+## download the CUDA Toolkit local installer
+#RUN wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/arm64/cuda-ubuntu2004.pin -O /etc/apt/preferences.d/cuda-repository-pin-600 && \
+#    wget https://developer.download.nvidia.com/compute/cuda/12.2.2/local_installers/cuda-tegra-repo-ubuntu2004-12-2-local_12.2.2-1_arm64.deb && \
+#    dpkg -i cuda-tegra-repo-*.deb && \
+#    rm cuda-tegra-repo-*.deb
+#
+## add the signed keys
+#RUN cp /var/cuda-tegra-repo-*/cuda-tegra-*-keyring.gpg /usr/share/keyrings/
+#
+## manually extract cuda-compat
+#RUN mkdir /var/cuda-compat && \
+#    cd /var/cuda-compat && \
+#    ar x ../cuda-tegra-repo-*/cuda-compat-*.deb && \
+#    tar xvf data.tar.xz -C / && \
+#    rm -rf /var/cuda-compat
+#
+## install cuda-toolkit (doesn't depend on cuda-compat/nvidia-l4t-core)
+#RUN apt-get update && \
+#    apt-get install -y --no-install-recommends \
+#            cuda-toolkit-* \
+#    && rm -rf /var/lib/apt/lists/* \
+#    && apt-get clean
+
+## Inspired by: https://hackmd.io/ZmWQz8azTdWNVoCc9Bf3QA |
+# nvidia-l4t-core is a dependency for the rest of the packages, and is designed to be installed directly
+# on the target device. This because it parses /proc/device-tree in the deb's .preinst script.
+# We can manually install it by running the lines below. t234 is for Orin computers and t194 is for the Xavier series
+RUN echo "deb https://repo.download.nvidia.com/jetson/common r${L4T_VERSION} main" >> /etc/apt/sources.list && \
+    echo "deb https://repo.download.nvidia.com/jetson/t234 r${L4T_VERSION} main" >> /etc/apt/sources.list && \
+    apt-key adv --fetch-key http://repo.download.nvidia.com/jetson/jetson-ota-public.asc && \
+    apt-key adv --fetch-keys http://l4t-repo.nvidia.com/jetson-ota-internal.key && \
+    mkdir -p /opt/nvidia/l4t-packages/ && \
+    touch /opt/nvidia/l4t-packages/.nv-l4t-disable-boot-fw-update-in-preinstall && \
+    rm -f /etc/ld.so.conf.d/nvidia-tegra.conf && apt-get update && \
+    apt-get install -y --no-install-recommends nvidia-l4t-core nvidia-l4t-gstreamer
+
+# Install CUDA
+RUN wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/arm64/cuda-keyring_1.0-1_all.deb && \
+    dpkg -i cuda-keyring_1.0-1_all.deb && \
+    apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
+    cuda-${CUDA} \
+    cuda-compat-${CUDA} \
+    cuda-toolkit-${CUDA} \
+    cuda-command-line-tools-${CUDA} \
+    cuda-cudart-${CUDA} \
+    cuda-libraries-${CUDA} \
+    cuda-nvml-dev-${CUDA} \
+    cuda-sanitizer-${CUDA} \
+    libcublas-${CUDA} \
+    libcudnn${cudnn_major_version} \
+    libcusparse-${CUDA} \
+    libnpp-${CUDA} && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* cuda-keyring_1.0-1_all.deb
+
+# Install cuDNN
+RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
+    libcudnn${cudnn_major_version} && \
+    sudo apt-mark hold libcudnn${cudnn_major_version} && \
+    DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends libcudnn${cudnn_major_version}-dev && \
+    sudo apt-mark hold libcudnn${cudnn_major_version}-dev && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install TensorRT
+RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
+    libnvinfer${tensorrt_major_version} \
+    libnvonnxparsers${tensorrt_major_version} \
+    libnvparsers${tensorrt_major_version} \
+    libnvinfer-plugin${tensorrt_major_version} && \
+    sudo apt-mark hold libnvinfer${tensorrt_major_version} libnvonnxparsers${tensorrt_major_version} libnvparsers${tensorrt_major_version} libnvinfer-plugin${tensorrt_major_version} && \
+    DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
+    libnvinfer-dev \
+    libnvonnxparsers-dev} \
+    libnvparsers-dev \
+    libnvinfer-plugin-dev \
+#    libnvinfer-headers-dev \
+#    libnvinfer-headers-plugin-dev \
+    tensorrt tensorrt-dev && \
+    sudo apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
+    python3-libnvinfer python3-libnvinfer-dev && \
+    sudo apt-mark hold libnvinfer-dev libnvonnxparsers-dev && \
+    DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
+    libnvparsers-dev libnvinfer-plugin-dev && \
+#    libnvinfer-headers-dev \
+#    libnvinfer-headers-plugin-dev && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install cuSPARSELt
+RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
+    libcusparselt0 libcusparselt-dev
+
+#RUN wget raw.githubusercontent.com/pytorch/pytorch/5c6af2b583709f6176898c017424dc9981023c28/.ci/docker/common/install_cusparselt.sh && \
+#  export CUDA_VERSION=12.1 && \
+#  bash ./install_cusparselt.sh
+
+# Install Pytorch. todo compile pytorch from source to support more versions
+#RUN python3 -m pip install --upgrade --no-cache $TORCH_INSTALL
+RUN wget $TORCH_INSTALL -O /tmp/torch-2.6.0rc1-cp310-cp310-linux_aarch64.whl && \
+    python3 -m pip install /tmp/torch-2.6.0rc1-cp310-cp310-linux_aarch64.whl && \
+    rm /tmp/torch-2.6.0rc1-cp310-cp310-linux_aarch64.whl
+
+# Install Torchvision
+RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
+    libjpeg-dev zlib1g-dev libpython3-dev libopenblas-dev libavcodec-dev libavformat-dev libswscale-dev
+#RUN python3 -m pip install --no-cache $TORCHVISION_INSTALL
+RUN wget $TORCHVISION_INSTALL -O /tmp/torchvision-0.20.0-cp310-cp310-linux_aarch64.whl && \
+    python3 -m pip install /tmp/torchvision-0.20.0-cp310-cp310-linux_aarch64.whl && \
+    rm /tmp/torchvision-0.20.0-cp310-cp310-linux_aarch64.whl
+
+## Install Tensorflow (https://elinux.org/Jetson_Zoo#TensorFlow | https://docs.nvidia.com/deeplearning/frameworks/install-tf-jetson-platform/index.html#prereqs)
+RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
+    libhdf5-serial-dev hdf5-tools libhdf5-dev zlib1g-dev zip libjpeg8-dev liblapack-dev libblas-dev gfortran && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN sudo python3 -m pip install --no-cache $TENSORFLOW_INSTALL
+
+# Install Keras. Not necessary since installing Tensorflow also installs this.
+RUN python3 -m pip install keras
+
+#RUN apt-get -y upgrade --allow-downgrades &&  apt-get clean && rm -rf /var/lib/apt/lists/*
+
+ENV CUDA_HOME="/usr/local/cuda"
+ENV PATH="/usr/local/cuda/bin:${PATH}"
+ENV LD_LIBRARY_PATH="/usr/local/cuda/compat:/usr/local/cuda/lib64:${LD_LIBRARY_PATH}"
+ENV OPENBLAS_CORETYPE=ARMV8
+#export PATH=/usr/local/cuda-12.4/bin${PATH:+:${PATH}}
+
+## Install ROS for non-ROS base packages. todo: setup user to use sudo, else remove
+#ENV LANG en_US.UTF-8
+#RUN apt update && DEBIAN_FRONTEND="noninteractive" sudo apt-get install -y --no-install-recommends \
+#    locales && \
+#    sudo locale-gen en_US en_US.UTF-8  && \
+#    sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8  && \
+#    export LANG=en_US.UTF-8  && \
+#    DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends software-properties-common && \
+#    sudo add-apt-repository -y universe && \
+#    sudo apt update && DEBIAN_FRONTEND="noninteractive" sudo apt-get install -y --no-install-recommends curl && \
+#    sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg && \
+#    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null && \
+#    sudo apt update && sudo apt upgrade -y && \
+#    sudo apt update && DEBIAN_FRONTEND="noninteractive" sudo apt install -y python3-rosdep ros-humble-desktop ros-humble-perception ros-dev-tools && \
+#    DEBIAN_FRONTEND="noninteractive" sudo apt-get install -y --no-install-recommends ros-humble-rmw-cyclonedds-cpp && \
+#    sudo rm -rf /var/lib/apt/lists/* && \
+#    source /opt/ros/humble/setup.bash && \
+#    export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp && \
+#    sudo apt upgrade -y && \
+#    sudo rosdep init && \
+#    rosdep update
+
+ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+
+RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
+
+RUN sudo apt-get update -y && DEBIAN_FRONTEND="noninteractive" sudo apt-get install -y --no-install-recommends \
+    ros-humble-ament-cmake ros-humble-ament-cmake-gtest ros-humble-rmw-cyclonedds-cpp
+
+## Install the complete ROS package. Disabled as it installs unused packages and takes up a lot of space.
+#RUN sudo apt-get update -y && DEBIAN_FRONTEND="noninteractive" sudo apt-get install -y --no-install-recommends \
+#    ros-humble-desktop-full
+
+WORKDIR /

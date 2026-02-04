@@ -1,0 +1,443 @@
+# todo: use ENVs instead of exporting
+#ARG BASE_IMAGE=privvyledge/ros:humble-desktop-full-cuda-12-2
+#ARG BASE_IMAGE="nvcr.io/nvidia/l4t-ml:r36.2.0-py3"
+ARG BASE_IMAGE="ubuntu:22.04"
+FROM ${BASE_IMAGE} as base_image
+
+# Set up the shell (no need as is done in the Isaac ROS Common ros2 humble Dockerfile)
+#SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+ENV TZ=America/New_York
+
+# Setup env and shell
+ARG DEBIAN_FRONTEND=noninteractive
+ARG DEBCONF_NONINTERACTIVE_SEEN=true
+
+ARG ROS_VERSION="ROS2"
+#ARG ROS_DISTRO="humble"
+#ENV ROS_DISTRO=${ROS_DISTRO}
+#ENV ROS_ROOT=/opt/ros/${ROS_DISTRO}
+#ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+
+#ENV NVIDIA_DRIVER_CAPABILITIES=all
+#ENV NVIDIA_VISIBLE_DEVICES=all
+
+# Install packages
+RUN sudo apt-get update -y && DEBIAN_FRONTEND="noninteractive" sudo apt-get install -y --no-install-recommends \
+    sudo \
+    git \
+    curl \
+    wget \
+    less \
+    zstd \
+    udev \
+    unzip \
+    build-essential \
+    apt-transport-https \
+    openssh-server libv4l-0 libv4l-dev v4l-utils binutils xz-utils bzip2 lbzip2 \
+    ca-certificates libegl1 \
+    software-properties-common \
+    lsb-release \
+    gnupg2 \
+    cmake \
+    ccache \
+    pkg-config \
+    swig \
+    g++ \
+    libpython3-dev \
+    python3-dev \
+    python3 \
+    python3-venv \
+    python3.10 \
+    python3.10-venv \
+    python3-pip \
+#    python3-setuptools \
+#    python3-numpy \
+    python3-rosdep \
+#    python3-matplotlib \
+#    python3-opencv \
+#    python3-pil \
+    python3-yaml \
+    python3-tk \
+    python3-pyqt5 \
+    python3-bloom \
+#    libopencv-dev \
+    libssl-dev \
+    libusb-1.0-0-dev \
+    libgtk-3-dev \
+    libglfw3-dev \
+    libgl1-mesa-dev \
+    libglu1-mesa-dev \
+    libgoogle-glog-dev \
+    qtcreator \
+    libunwind-dev \
+    libgstreamer1.0-0 \
+    gstreamer1.0-plugins-base \
+    gstreamer1.0-plugins-good \
+    gstreamer1.0-plugins-bad \
+    gstreamer1.0-plugins-ugly \
+    gstreamer1.0-libav \
+    gstreamer1.0-tools \
+    gstreamer1.0-x \
+    gstreamer1.0-alsa \
+    gstreamer1.0-gl \
+    gstreamer1.0-gtk3 \
+    gstreamer1.0-qt5 \
+    gstreamer1.0-pulseaudio \
+    libglib2.0-dev \
+    libgstrtspserver-1.0-dev \
+    gstreamer1.0-rtsp \
+    bc \
+    libpcl-dev \
+    libpcap-dev \
+    libboost-dev \
+    libgeographic-dev \
+    iproute2 && \
+    sudo rm -rf /var/lib/apt/lists/*
+
+# Update pip and Set Python3 as default then install Controls related python packages
+RUN python3 -m pip install -U pip wheel && \
+    update-alternatives --install /usr/bin/python python /usr/bin/python3 1 && \
+    python3 -m pip install \
+    transforms3d \
+    "numpy==1.26.4" \
+    "control==0.10.1" "simple-pid==2.0.0" \
+    "do-mpc==4.6.5" "casadi==3.6.7" \
+    "kornia==0.8.0" networkx pyserial
+
+## Initialize ROS workspace
+#ENV BUILD_HOME=/f1tenth_ws
+#ARG BUILD_HOME=$BUILD_HOME
+#
+#RUN mkdir -p "$BUILD_HOME/src"
+
+#WORKDIR $BUILD_HOME/src
+
+########################################## Fix bluetooth issues
+#RUN sudo apt-get update && DEBIAN_FRONTEND="noninteractive" sudo apt-get install -y --no-install-recommends \
+#    libspnav-dev libbluetooth-dev libcwiid1 libcwiid-dev
+
+# Install ROS packages (bundled to reduce Docker image size and avoid maximum depth of 125 layers)
+RUN sudo apt-get update && DEBIAN_FRONTEND="noninteractive" sudo apt-get install -y --no-install-recommends \
+    ros-${ROS_DISTRO}-asio-cmake-module \
+    ros-${ROS_DISTRO}-tf2-tools \
+    ros-${ROS_DISTRO}-tf-transformations \
+    ros-${ROS_DISTRO}-rqt-tf-tree \
+    ros-${ROS_DISTRO}-tf2-geometry-msgs \
+    ros-${ROS_DISTRO}-twist-mux \
+    ros-${ROS_DISTRO}-joy-linux \
+    ros-${ROS_DISTRO}-teleop-twist-joy \
+    ros-${ROS_DISTRO}-geographic-msgs \
+    ros-${ROS_DISTRO}-behaviortree-cpp-v3 \
+    ros-${ROS_DISTRO}-nav2-msgs \
+    ros-${ROS_DISTRO}-nav2* \
+    ros-${ROS_DISTRO}-navigation2 \
+    ros-${ROS_DISTRO}-nav2-bringup \
+    ros-${ROS_DISTRO}-slam-toolbox \
+    ros-${ROS_DISTRO}-robot-localization \
+    ros-${ROS_DISTRO}-spatio-temporal-voxel-layer \
+    ros-${ROS_DISTRO}-imu-tools \
+    ros-${ROS_DISTRO}-filters \
+    ros-${ROS_DISTRO}-image-pipeline \
+    ros-${ROS_DISTRO}-camera-calibration-parsers \
+    ros-${ROS_DISTRO}-camera-info-manager \
+    ros-${ROS_DISTRO}-compressed-image-transport \
+    ros-${ROS_DISTRO}-compressed-depth-image-transport \
+    ros-${ROS_DISTRO}-image-transport \
+    ros-${ROS_DISTRO}-image-transport-plugins \
+#    ros-${ROS_DISTRO}-rviz2 \
+#    ros-${ROS_DISTRO}-rviz-common \
+#    ros-${ROS_DISTRO}-rviz-visual-tools \
+#    ros-${ROS_DISTRO}-rviz-default-plugins \
+    ros-${ROS_DISTRO}-vision-msgs-rviz-plugins \
+    ros-${ROS_DISTRO}-rmw-cyclonedds-cpp \
+    ros-${ROS_DISTRO}-rmw-fastrtps-cpp \
+    ros-${ROS_DISTRO}-apriltag \
+    ros-${ROS_DISTRO}-plotjuggler-ros && \
+    sudo rm -rf /var/lib/apt/lists/*
+
+# note default HOME in Dockerfile is empty while HOME in RUN commands is /root
+ARG HOME=/home/admin
+#ARG SDK_ROOT=/home/${USERNAME}/sdks
+ENV SDK_ROOT=${HOME}/sdks
+
+# Install Acados.
+#ARCHITECTURES: "" (Recommended), ARMV8A_ARM_CORTEX_A57-TX2, Orin Nano, ARMV8A_ARM_CORTEX_A76-ORIN, X64_AUTOMATIC, GENERIC
+# Could remove the -DBLASFEO_TARGET specification and should be automatically detected
+ARG ACADOS_VERSION=v0.4.3
+ARG TX2_ARCHITECTURE=ARMV8A_ARM_CORTEX_A57
+ARG ORIN_ARCHITECTURE=ARMV8A_ARM_CORTEX_A76
+ARG ACADO_BLASFEO_TARGET_CPU_ARCHITECHTURE=${ORIN_ARCHITECTURE}
+ARG ACADOS_OPENMP_PARALLELIZATION_ENABLED=ON
+ARG ACADOS_NUM_THREADS=2
+ENV ACADOS_ROOT=${SDK_ROOT}/acados
+ENV ACADOS_PATH=${ACADOS_ROOT}
+ENV ACADOS_SOURCE_DIR=${ACADOS_ROOT}
+
+RUN mkdir -p ${HOME}/sdks && cd ${HOME}/sdks && \
+    git clone -b ${ACADOS_VERSION} https://github.com/acados/acados.git && cd acados && \
+    git submodule update --recursive --init && \
+    mkdir build && cd build && \
+    cmake \
+        -DACADOS_WITH_QPOASES=ON \
+        -DACADOS_WITH_OSQP=ON \
+        -DACADOS_INSTALL_DIR=${HOME}/sdks/acados \
+        -DBLASFEO_TARGET=${ACADO_BLASFEO_TARGET_CPU_ARCHITECHTURE} \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DACADOS_NUM_THREADS=${ACADOS_NUM_THREADS} \
+        -DACADOS_WITH_OPENMP=${ACADOS_OPENMP_PARALLELIZATION_ENABLED} .. && \
+    make -j$(($(nproc)-1)) && \
+    sudo make install -j$(nproc) && \
+    python3 -m pip install -U pip && \
+    python3 -m pip install -e ${HOME}/sdks/acados/interfaces/acados_template && \
+#    curl https://sh.rustup.rs -sSf | sh -s -- -y && source $HOME/.cargo/env && \
+    sudo apt update && sudo apt install -y rustc cargo && cd ../bin && \
+    git clone https://github.com/acados/tera_renderer.git && cd tera_renderer && cargo build --verbose --release && \
+    cp target/release/t_renderer ${HOME}/sdks/acados/bin
+
+#################################################### Setup YDLidar
+RUN mkdir -p "${HOME}/sdks/YDLIDAR" && cd "${HOME}/sdks/YDLIDAR" && git clone https://github.com/YDLIDAR/YDLidar-SDK.git && \
+    cd YDLidar-SDK && mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Release .. && make && sudo make install
+
+## Tested with version v4.55.1. Could try ros2_development. Should be done in a preceeding build
+#ARG REALSENSE_ROS_BRANCH="v4.55.1"
+#RUN cd ${BUILD_HOME}/src && git clone -b ${REALSENSE_ROS_BRANCH} https://github.com/privvyledge/realsense-ros.git
+
+#################################################### Setup RTAB-Map (which also publishes odometry from laser_scan)
+# RUN cd "$BUILD_HOME/src" && git clone https://github.com/introlab/rtabmap.git && git clone https://github.com/introlab/rtabmap_ros.git -b ${ROS_DISTRO}-devel
+RUN sudo apt-get update && DEBIAN_FRONTEND="noninteractive" sudo apt-get install -y --no-install-recommends \
+    ros-${ROS_DISTRO}-rtabmap-odom ros-${ROS_DISTRO}-rtabmap-slam \
+    ros-${ROS_DISTRO}-rtabmap-launch ros-${ROS_DISTRO}-rtabmap-python ros-${ROS_DISTRO}-rtabmap-viz \
+    ros-${ROS_DISTRO}-rtabmap-rviz-plugins ros-${ROS_DISTRO}-grid-map-rviz-plugin && \
+    sudo rm -rf /var/lib/apt/lists/*
+
+##----------------------------------------------
+## Setup KISS-ICP support. Disable as it does not work with RGB-D based pointclouds. todo: replace with my Open3D based nodes
+##----------------------------------------------
+#RUN cd ${BUILD_HOME}/src && git clone https://github.com/PRBonn/kiss-icp.git
+
+##----------------------------------------------
+## Install ROSBag support.
+## ros-${ROS_DISTRO}-rosbag2*
+##----------------------------------------------
+##RUN sudo apt-get update && DEBIAN_FRONTEND="noninteractive" sudo apt-get install -y --no-install-recommends \
+##    ros-${ROS_DISTRO}-rosbag2 ros-${ROS_DISTRO}-rosbag2-compression-zstd ros-${ROS_DISTRO}-rosbag2-cpp ros-${ROS_DISTRO}-rosbag2-py \
+##    ros-${ROS_DISTRO}-ros2bag ros-${ROS_DISTRO}-rosbag2-storage-mcap ros-${ROS_DISTRO}-rosbag2-transport && \
+##    sudo rm -rf /var/lib/apt/lists/*
+#RUN cd ${BUILD_HOME}/src && git clone https://github.com/ros2/rosbag2.git -b humble
+
+##----------------------------------------------
+## Setup Dualshock 4 ROS image. Make sure to setup the drivers on the host. (optional)
+##----------------------------------------------
+#RUN cd ${HOME}/sdks/ && git clone https://github.com/naoki-mizuno/ds4drv --branch devel \
+#    && cd ds4drv \
+#    && python3 setup.py install
+#RUN cd ${BUILD_HOME}/src && git clone https://github.com/naoki-mizuno/ds4_driver.git
+
+#----------------------------------------------
+# Install YOLOv8 and corresponding ROS nodes
+# YOLOv8 nodes.
+# Downgrade numpy to 1.23.5 if np.bool depracation errors occur
+# Note that downgrading numpy might cause issues with other python packages, i.e onnxruntime-gpu and tensorflow as they require higher numpy versions. Could use a pytorch only base image instead.
+# To export to tensorrt
+# Using the command line: yolo export model="/shared_dir/models/detection/yolo/yolov8n-seg.pt" half=True simplify=True format=engine
+# Using python: python3 -c "from ultralytics import YOLO;model = YOLO('yolov8s.pt');model.export(format='engine', half=True, simplify=True)"
+
+# YOLOv8 ROS Usage. todo: put in launch files:
+# images only
+# ros2 launch ultralytics_ros tracker.launch.xml debug:=false input_topic:=/camera/camera/color/image_raw yolo_model:=yolov8m-seg.pt
+# ros2 launch yolov8_bringup yolov8.launch.py model:=yolov8m-seg.pt input_image_topic:=/camera/camera/color/image_raw # or yolov9
+# 3D
+# ros2 launch ultralytics_ros tracker_with_cloud.launch.xml debug:=false input_topic:=/camera/camera/color/image_raw yolo_model:=yolov8m-seg.pt camera_info_topic:=/camera/camera/color/camera_info lidar_topic:=/camera/camera/depth/color/points yolo_result_topic:=/yolo/realsense/rgb yolo_3d_result_topic:=/yolo/realsense_3d_result cluster_tolerance:=0.3  voxel_leaf_size:=0.1 min_cluster_size:=100 max_cluster_size:=10000
+# ros2 launch yolov8_bringup yolov8_3d.launch.py model:=yolov8m-seg.pt input_image_topic:=/camera/camera/color/image_raw input_depth_topic:=/camera/camera/depth/image_rect_raw input_depth_info_topic:=/camera/camera/depth/camera_info target_frame:=camera_link
+#----------------------------------------------
+## (optionally) download fonts. Done in RUN command to reduce Docker image size
+#ADD https://github.com/ultralytics/assets/releases/download/v0.0.0/Arial.ttf \
+#    https://github.com/ultralytics/assets/releases/download/v0.0.0/Arial.Unicode.ttf \
+#    ${HOME}/.config/Ultralytics/
+
+# Install ultralytics YOLOv8. Tested with version v8.2.35.
+# Jetson ONNX Runtimes (https://elinux.org/Jetson_Zoo#ONNX_Runtime). Onnx Runtime 1.18.0 for python 3.10
+# optional python versions. numpy==1.23.5 onnx==1.14.0 urllib3==1.26.18 Bottleneck==1.3.4
+ARG ULTRALYTICS_VERSION=v8.3.86
+RUN sudo apt-get update && \
+    DEBIAN_FRONTEND="noninteractive" sudo apt-get install -y --no-install-recommends \
+    git-lfs gcc git zip curl htop libgl1 libglib2.0-0 libpython3-dev gnupg g++ libusb-1.0-0 && \
+    mkdir -p ${HOME}/.config/Ultralytics && cd ${HOME}/.config/Ultralytics && \
+    wget https://github.com/ultralytics/assets/releases/download/v0.0.0/Arial.ttf && \
+    wget https://github.com/ultralytics/assets/releases/download/v0.0.0/Arial.Unicode.ttf && \
+    cd ${HOME}/sdks/ && git clone -b ${ULTRALYTICS_VERSION} https://github.com/ultralytics/ultralytics && \
+    cd ultralytics &&  grep -v "opencv-python" pyproject.toml > temp.toml && mv temp.toml pyproject.toml && \
+    wget https://pypi.jetson-ai-lab.dev/jp6/cu126/+f/f6e/2baa664069470/onnxruntime_gpu-1.20.2-cp310-cp310-linux_aarch64.whl#sha256=f6e2baa664069470c6574219a79aba315e26c76db49d347678a5a273f1c41c9a -O /tmp/onnxruntime_gpu-1.20.2-cp310-cp310-linux_aarch64.whl && \
+    python3 -m pip install /tmp/onnxruntime_gpu-1.20.2-cp310-cp310-linux_aarch64.whl && \
+    python3 -m pip install https://github.com/ultralytics/assets/releases/download/v0.0.0/torchvision-0.20.0a0+afc54f7-cp310-cp310-linux_aarch64.whl && \
+    sudo apt-get update && sudo apt-get -y install libcusparselt0 libcusparselt-dev && \
+    python3 -m pip install --upgrade pip wheel "setuptools==70.0.0" "setuptools_scm>=6.2" && \
+    cd ${HOME}/sdks/ultralytics/ && python3 -m pip install -e ".[export]" && \
+    python3 -m pip install "numpy==1.26.4" && \
+    sudo rm -rf /var/lib/apt/lists/*
+#    export OMP_NUM_THREADS=1 && \
+
+
+###-----------------------------------------------
+### Install/build Open3D (https://www.open3d.org/docs/release/arm.html). Doesn't work in dusty-nv container but works in Nvidia Isaac ROS container.
+### To build, see https://www.open3d.org/docs/release/arm.html#building-open3d-python-wheel-with-docker
+## Note: for now the main Open3D branch does not compile with Jetson, so use the rislab fork. Also, do not build ML/Pytorch ops.
+## Do not install via Pip on Jetsons as it only installs CPU versions
+## VTK can either be built from source or installed via apt.
+###-----------------------------------------------
+##RUN python3 -m pip install "open3d==0.18.0"
+### use rislab's fork till the main Open3D repo fixes Jetson CUDA compilation issues
+### Todo: test without specifying compiler options
+#ARG ORIN_GPU_ARCHITECTURE="72;86;87"
+#RUN python3 -m pip uninstall open3d && \
+#    cd ${HOME}/sdks/ && \
+##    git clone https://github.com/isl-org/Open3D.git && \
+#    git clone https://github.com/rislab/Open3D.git && \
+#    cd Open3D && \
+#    git checkout 8f00080 && \
+#    bash ./util/install_deps_ubuntu.sh assume-yes && \
+#    sudo apt-get update && DEBIAN_FRONTEND="noninteractive" sudo apt-get install -y --no-install-recommends \
+#    git xorg-dev libxcb-shm0 libglu1-mesa-dev python3-dev clang libc++-dev libc++abi-dev libsdl2-dev ninja-build libxi-dev libtbb-dev \
+#    libosmesa6-dev libudev-dev autoconf libtool gfortran && sudo rm -rf /var/lib/apt/lists/* && \
+#    mkdir build && cd build && \
+#    export CUDA_HOME=/usr/local/cuda && \
+#    export LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/targets/aarch64-linux/lib/stubs:/opt/ros/${ROS_DISTRO}/install/lib:$LD_LIBRARY_PATH && \
+#    export CUDACXX=/usr/local/cuda/bin/nvcc && export PATH=/usr/local/cuda/bin:${PATH} && \
+#    export CC=/usr/bin/clang-14 && export CXX=/usr/bin/clang++-14 &&  \
+#    cmake  \
+#      -DBUILD_SHARED_LIBS=ON \
+#      -DWITH_OPENMP=ON \
+#      -DBUILD_CUDA_MODULE=ON \
+#      -DCMAKE_CUDA_ARCHITECTURES=${ORIN_GPU_ARCHITECTURE}  \
+#      -DCUDAToolkit_ROOT=/usr/local/cuda \
+#      -DCMAKE_BUILD_TYPE=Release \
+#      -DBUILD_GUI=OFF \
+#      -DUSE_SYSTEM_VTK=ON -DBUILD_VTK_FROM_SOURCE=OFF \
+#      -DBUILD_PYTORCH_OPS=OFF \
+#      -DBUILD_TENSORFLOW_OPS=OFF \
+#      -DBUNDLE_OPEN3D_ML=OFF \
+#      -DBUILD_LIBREALSENSE=ON \
+#      -DUSE_SYSTEM_LIBREALSENSE=ON \
+#      -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ \
+#      -DCMAKE_INSTALL_PREFIX=${HOME}/sdks/open3d_install \
+##      -DBUILD_PYTHON_MODULE=ON  \
+#      -DPython3_EXECUTABLE=/usr/bin/python3 \
+#      -DCMAKE_CXX_FLAGS="-Wl,--allow-shlib-undefined"  --no-warn-unused-cli \
+#      .. && \
+#    make -j$(($(nproc)-1)) && \
+#    sudo apt remove python3-blinker -y && \
+#    make install-pip-package && sudo make install
+
+#--------------------------------
+# Install Nvidia Isaac Realsense dependencies and other Isaac ROS packages
+# Note: do not install "ros-${ROS_DISTRO}-isaac-ros-realsense" as it installs realsense libraries which causes realsense failure.
+#--------------------------------
+RUN sudo apt-get update && DEBIAN_FRONTEND="noninteractive" sudo apt-get install -y --no-install-recommends \
+    ros-${ROS_DISTRO}-gxf-isaac-depth-image-proc \
+    ros-${ROS_DISTRO}-isaac-ros-image-proc \
+    ros-${ROS_DISTRO}-gxf-isaac-point-cloud \
+    ros-${ROS_DISTRO}-gxf-isaac-ros-messages \
+    ros-${ROS_DISTRO}-gxf-isaac-sgm \
+    ros-${ROS_DISTRO}-gxf-isaac-utils \
+    ros-${ROS_DISTRO}-isaac-ros-stereo-image-proc \
+    ros-${ROS_DISTRO}-isaac-ros-depth-image-proc \
+    ros-${ROS_DISTRO}-isaac-ros-nitros-disparity-image-type \
+    ros-${ROS_DISTRO}-isaac-ros-nitros-point-cloud-type \
+    ros-${ROS_DISTRO}-isaac-ros-visual-slam \
+    ros-${ROS_DISTRO}-isaac-ros-nvblox \
+    ros-${ROS_DISTRO}-isaac-ros-apriltag \
+    ros-${ROS_DISTRO}-isaac-ros-occupancy-grid-localizer \
+    ros-${ROS_DISTRO}-isaac-mapping-ros \
+    ros-${ROS_DISTRO}-isaac-ros-visual-global-localization \
+    ros-${ROS_DISTRO}-isaac-ros-detectnet ros-humble-isaac-ros-dnn-image-encoder ros-humble-isaac-ros-triton \
+    ros-${ROS_DISTRO}-isaac-ros-rtdetr \
+    ros-${ROS_DISTRO}-isaac-ros-yolov8 \
+    ros-${ROS_DISTRO}-isaac-ros-dnn-image-encoder \
+    ros-${ROS_DISTRO}-isaac-ros-tensor-rt \
+    ros-${ROS_DISTRO}-isaac-ros-examples && sudo rm -rf /var/lib/apt/lists/* \
+    && sudo apt-get clean
+
+## Update environment
+#RUN update-alternatives --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-14 14
+#ENV LD_LIBRARY_PATH="/opt/nvidia/vpi3/lib64:${LD_LIBRARY_PATH}"
+#ENV LD_LIBRARY_PATH="/usr/lib/aarch64-linux-gnu/tegra:${LD_LIBRARY_PATH}"
+#ENV LD_LIBRARY_PATH="/usr/local/cuda-12.2/targets/aarch64-linux/lib:${LD_LIBRARY_PATH}"
+#ENV LD_LIBRARY_PATH="/usr/lib/aarch64-linux-gnu/tegra-egl:${LD_LIBRARY_PATH}"
+#ENV LD_LIBRARY_PATH="/usr/lib/aarch64-linux-gnu/tegra/weston:${LD_LIBRARY_PATH}"
+#ENV LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/usr/lib/aarch64-linux-gnu-host"
+#ENV PATH="/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/src/tensorrt/bin:${PATH}"
+
+#--------------------------------
+# Build ROS workspace
+# The '--event-handlers console_direct+ --base-paths',  ' -DCMAKE_LIBRARY_PATH' and ' -DCMAKE_CXX_FLAGS="-Wl,--allow-shlib-undefined"' flags are needed by ZED
+# The ' -DCMAKE_BUILD_TYPE=Release' flag is for all of them, especially Autoware
+#--------------------------------
+# Silence setup.py and easy_install deprecation warnings caused by colcon and setuptools (https://github.com/colcon/colcon-core/issues/454#issuecomment-1142649390)
+# (no need as is done in the Isaac ROS Common ros2 humble Dockerfile)
+#ENV PYTHONWARNINGS=ignore:::setuptools.command.install,ignore:::setuptools.command.easy_install,ignore:::pkg_resources,ignore:::setuptools.command.develop
+
+#WORKDIR $BUILD_HOME
+#ARG MAKEFLAGS="-j4 -l4"
+ENV SKIPPED_ROSDEP_KEYS="cmake_modules pacmod3_msgs  python3-open3d open3d \
+    librealsense2 realsense2_camera libopencv-dev  libopencv-contrib-dev libopencv-imgproc-dev python-opencv python3-opencv"
+
+################# Temporarily pull all the packages and install dependencies then delete to save space
+RUN mkdir -p ${HOME}/f1tenth_ws/src && cd ${HOME}/f1tenth_ws/src &&  \
+    git clone https://github.com/privvyledge/autodriver.f1tenth.git -b master && \
+    cd ${HOME}/f1tenth_ws && vcs import --recursive --workers 6 src < src/autodriver.f1tenth/f1tenth.repos && \
+    sudo apt update && rosdep update && \
+    source /opt/ros/${ROS_DISTRO}/setup.bash && \
+    rosdep install --from-paths src --ignore-src -r -y -q --os=ubuntu:jammy --rosdistro=${ROS_DISTRO} --skip-keys "${SKIPPED_ROSDEP_KEYS}" && \
+    cd ${HOME} && rm -rf ${HOME}/f1tenth_ws
+
+######## (optional) Disable git warnings. Or downgrade to version setuptools_scm==5.0.0
+RUN python3 -m pip uninstall -y setuptools-scm
+
+#RUN sudo apt update && \
+#    rosdep update && \
+#    source /opt/ros/${ROS_DISTRO}/setup.bash && \
+#    rosdep install --from-paths src --ignore-src -r -y -q --os=ubuntu:jammy --rosdistro=humble --skip-keys "${SKIPPED_ROSDEP_KEYS}"
+
+############# Build ROS2 workspace
+#RUN source /opt/ros/${ROS_DISTRO}/setup.bash && \
+#    colcon build --symlink-install --event-handlers console_direct+ --base-paths src --cmake-args \
+#    ' -Wno-dev' ' --no-warn-unused-cli' \
+#    ' -DBUILD_ACCELERATE_GPU_WITH_GLSL=ON' \
+#    ' -DCMAKE_BUILD_TYPE=Release' ' -DCMAKE_EXPORT_COMPILE_COMMANDS=ON' \
+#    ' -DCMAKE_LIBRARY_PATH=/usr/local/cuda/lib64/stubs' \
+#    ' -DCMAKE_CXX_FLAGS="-Wl,--allow-shlib-undefined"' \
+#    --mixin release compile-commands ccache
+
+#-----------------------------
+# Setup environment variables. Use ENV to avoid creating docker layers
+#-----------------------------
+ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp \
+    LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/lib:${ACADOS_ROOT}/lib \
+    CCACHE_DIR=${HOME}/ccache \
+    CC=/usr/lib/ccache/gcc \
+    CXX=/usr/lib/ccache/g++ \
+    RCUTILS_COLORIZED_OUTPUT=1 \
+    RCUTILS_CONSOLE_OUTPUT_FORMAT="[{severity} {time}] [{name}]: {message} ({function_name}() at {file_name}:{line_number})" \
+    _colcon_cd_root=${ROS_ROOT}
+
+RUN echo 'alias build="colcon build --symlink-install --event-handlers console_direct+"' >> /etc/bash.bashrc && \
+    echo "source /usr/share/colcon_cd/function/colcon_cd.sh" >> /etc/bash.bashrc
+
+# RUN echo 'source /opt/ros/${ROS_DISTRO}/setup.bash' >> ~/.bashrc && \
+##    echo "export RMW_IMPLEMENTATION=rmw_fastrtps_cpp" >> ~/.bashrc && \
+#    echo "export CYCLONEDDS_URI=file://$BUILD_HOME/src/autoware.f1tenth/cyclone_dds/cyclonedds_config.xml" >> ~/.bashrc && \
+#    echo "export FASTRTPS_DEFAULT_PROFILES_FILE=$BUILD_HOME/src/autoware.f1tenth/fast_dds/fastdds_profile.xml" >> ~/.bashrc && \
+#    echo 'export LD_PRELOAD=${HOME}/sdks/open3d_install/lib/libOpen3D.so' >> ~/.bashrc
+
+##RUN sudo rm -rf ${HOME}/sdks/
+#RUN rm -rf ${HOME}/sdks/librealsense/build ${HOME}/sdks/Open3D/build
+
+## RUN ros2 doctor # run this if the LIDAR doesn't run (https://github.com/YDLIDAR/ydlidar_ros2_driver/issues/10)
+
+RUN useradd -ms /bin/bash ${USERNAME}
+
+RUN sudo chown -R ${USERNAME} ${HOME}
+# RUN sudo chown -R ${USERNAME} ${HOME}/.cache ${HOME}/.config
+
+## Todo: remove the lines below in Release/production version
+RUN sudo apt update && sudo apt install gedit cheese nautilus net-tools iputils-ping nano -y
