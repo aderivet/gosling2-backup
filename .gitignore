@@ -1,0 +1,21 @@
+# build artifacts
+build/
+install/
+log/
+devel/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+
+# editor/os
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# secrets
+.env
+*.key
+*.pem
