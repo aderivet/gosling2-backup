@@ -1,0 +1,9 @@
+/**:
+  ros__parameters:
+    update_rate: 10.0
+    delimiter: ";"
+    is_header: true
+    col_x: 0
+    col_y: 1
+    col_yaw: 2
+    col_vel: 3

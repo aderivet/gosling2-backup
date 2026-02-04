@@ -1,0 +1,69 @@
+# Copyright (C) 2025, Boluwatife Olabiran <bso19a@fsu.edu>
+# All rights reserved
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+# 3. Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived
+#    from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+# CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
+# BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+# HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+# OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+# EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+
+ARG WORKSPACE_DIR=/workspaces/f1tenth
+
+# Copy the repository
+COPY ./src ${WORKSPACE_DIR}/src
+# Copy scripts
+RUN cp ${WORKSPACE_DIR}/src/autodriver.f1tenth/docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Set the working directory
+WORKDIR ${WORKSPACE_DIR}
+
+ENV SKIPPED_ROSDEP_KEYS="cmake_modules pacmod3_msgs  python3-open3d open3d \
+    librealsense2 realsense2_camera libopencv-dev  libopencv-contrib-dev libopencv-imgproc-dev python-opencv python3-opencv"
+
+# Install dependencies
+RUN sudo apt-get update && \
+    pip3 install -U jetson-stats && \
+    rosdep update && \
+    rosdep install --from-paths src --ignore-src -r -y -q --skip-keys "${SKIPPED_ROSDEP_KEYS}" && \
+    rm -rf /var/lib/apt/lists/*
+
+# Compile the workspace
+RUN source ${ROS_ROOT:?}/setup.bash && colcon build --event-handlers console_direct+ --base-paths src --cmake-args \
+    ' -Wno-dev' ' --no-warn-unused-cli' \
+    ' -DBUILD_ACCELERATE_GPU_WITH_GLSL=ON' \
+    ' -DCMAKE_BUILD_TYPE=Release' ' -DCMAKE_EXPORT_COMPILE_COMMANDS=ON' \
+    ' -DCMAKE_LIBRARY_PATH=/usr/local/cuda/lib64/stubs' \
+    ' -DCMAKE_CXX_FLAGS="-Wl,--allow-shlib-undefined"' && rm -rf build src log
+
+# https://docs.docker.com/engine/reference/builder/#stopsignal
+# https://hynek.me/articles/docker-signals/
+STOPSIGNAL SIGINT
+
+# Set the ROS workspace environment variables
+ENV ROS_WS=${WORKSPACE_DIR}
+
+# Set the entrypoint
+ENTRYPOINT ["/entrypoint.sh"]
+
+#CMD ["ros2", "launch", "f1tenth_launch", "teleop.launch.py"]

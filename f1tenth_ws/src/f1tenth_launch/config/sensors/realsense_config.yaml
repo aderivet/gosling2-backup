@@ -1,0 +1,89 @@
+# todo: pass resolution, fps and depth_module.emitter_enabled in the launch file
+/**:
+  ros__parameters:
+    #device_type: 'd435i'
+    #serial_no: ''
+    #usb_port_id: ''
+    #camera_name: 'camera'
+    #camera_namespace: 'camera'
+    initial_reset: false
+    #base_frame_id: camera_link
+
+    accelerate_gpu_with_glsl: false  # Only available if compiled with the flag set to ON. Note: setting to true causes high cpu utilization.
+    log_level: info # DEBUG|INFO|WARN|ERROR|FATAL
+    wait_for_device_timeout: -1.0 # Timeout for waiting for device to connect (Seconds)
+    reconnect_timeout: 6.0  # Timeout(seconds) between consecutive reconnection attempts
+
+    enable_sync: true
+    enable_color: true
+    enable_depth: true
+    enable_infra: true
+    enable_infra1: true
+    enable_infra2: true
+    pointcloud.enable: true  # overridden by launch files
+    colorizer.enable: false
+    align_depth.enable: true # Overridden by launch files
+    enable_gyro: true
+    enable_accel: true
+    enable_rgbd: false
+    enable_confidence: false
+    enable_pose: false
+
+    rgb_camera:
+      profile: "640x360x30"   # warning: depracated. Use color_profile instead
+      color_profile: "640x360x30"  # 640x360x15, 640x480x60, 848x480x30, 1280x720x30
+      color_format: "RGB8"
+      enable_auto_exposure: true
+
+    depth_module:
+      profile: "640x360x30"  # warning: depracated. Use depth_profile and infra_profile instead
+      depth_profile: "640x360x30"  # 640x360x15, 640x480x60, 848x480x30, 1280x720x30
+      depth_format: "Z16"
+      enable_auto_exposure: true
+      infra_profile: "640x360x30"
+      infra_format: "RGB8"
+      infra1_format: "Y8"
+      infra2_format: "Y8"
+      emitter_enabled: 0  # set to 0 if using infra.  Overridden by launch files
+      emitter_on_off: False  # Overridden by launch files
+
+    pointcloud:
+      ordered_pc: true
+      stream_filter: 2  #  2=colorized pointcloud [recommended], 0=plain white pointcloud
+      stream_index_filter: 0
+      allow_no_texture_points: false # true
+
+    gyro_fps: 200 # 200, 400
+    accel_fps: 200 # 100, 200
+    unite_imu_method: 2  # 0: no unified imu message, 1: copy, 2: linear interpolation
+    angular_velocity_cov: 0.01
+    linear_accel_cov: 0.01
+
+    publish_tf: true
+#    tf_publish_rate: 200.0
+    clip_distance: 6.0  # meters
+
+#    # Enable post-processing filters
+#    decimation_filter:
+#      enable: false
+#      filter_magnitude: 2
+#    spatial_filter:
+#      enable: false
+#    temporal_filter:
+#      enable: false
+#    disparity_filter:
+#      enable: false
+#    hole_filling_filter:
+#      enable: false
+
+    # setup sensor QoS. SYSTEM_DEFAULT [default QoS] | DEFAULT | SENSOR_DATA | PARAMETER_EVENTS | SERVICES_DEFAULT | PARAMETERS
+    color_qos: "SENSOR_DATA"
+    color_info_qos: "SENSOR_DATA"
+    infra_qos: "SENSOR_DATA"
+    infra1_qos: "SENSOR_DATA"
+    infra2_qos: "SENSOR_DATA"
+    depth_qos: "SENSOR_DATA"
+    depth_info_qos: "SENSOR_DATA"
+    pointcloud.pointcloud_qos: "SENSOR_DATA"
+    gyro_qos: "SENSOR_DATA"
+    accel_qos: "SENSOR_DATA"

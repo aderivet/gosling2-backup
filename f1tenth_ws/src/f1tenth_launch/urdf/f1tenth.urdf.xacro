@@ -1,0 +1,12 @@
+<?xml version="1.0" ?>
+<robot name="f1tenth_camera" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Realsense Camera -->
+  <xacro:arg name="use_nominal_extrinsics" default="False" />
+  <xacro:include filename="$(find realsense2_description)/urdf/_d435i.urdf.xacro"/>
+
+  <link name="sensor_kit_link" />
+  <xacro:sensor_d435i parent="sensor_kit_link" use_nominal_extrinsics="$(arg use_nominal_extrinsics)">
+    <origin xyz="0.1775164 0 0.0639086" rpy="0 0 0"/>
+  </xacro:sensor_d435i>
+</robot>

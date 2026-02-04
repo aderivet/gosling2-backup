@@ -1,0 +1,116 @@
+- module: map
+  mode: [online, planning_simulation]
+  type: launch
+  args:
+    node_name_suffix: vector_map
+    topic: /map/vector_map
+    topic_type: autoware_auto_mapping_msgs/msg/HADMapBin
+    best_effort: false
+    transient_local: true
+    warn_rate: 0.0
+    error_rate: 0.0
+    timeout: 0.0
+
+- module: map
+  mode: [online]
+  type: launch
+  args:
+    node_name_suffix: map
+    topic: /map
+    topic_type: nav_msgs/msg/OccupancyGrid
+    best_effort: false
+    transient_local: true
+    warn_rate: 0.0
+    error_rate: 0.0
+    timeout: 0.0
+
+- module: localization
+  mode: [online]
+  type: autonomous
+  args:
+    node_name_suffix: twist_estimator_twist_with_covariance
+    topic: /localization/twist_estimator/twist_with_covariance
+    topic_type: geometry_msgs/msg/TwistWithCovarianceStamped
+    best_effort: false
+    transient_local: false
+    warn_rate: 5.0
+    error_rate: 1.0
+    timeout: 1.0
+
+- module: planning
+  mode: [online, planning_simulation]
+  type: autonomous
+  args:
+    node_name_suffix: mission_planning_route
+    topic: /planning/mission_planning/route
+    topic_type: autoware_planning_msgs/msg/LaneletRoute
+    best_effort: false
+    transient_local: true
+    warn_rate: 0.0
+    error_rate: 0.0
+    timeout: 0.0
+
+- module: planning
+  mode: [online, planning_simulation]
+  type: autonomous
+  args:
+    node_name_suffix: racing_planner_trajectory
+    topic: /planning/racing_planner/trajectory
+    topic_type: autoware_auto_planning_msgs/msg/Trajectory
+    best_effort: false
+    transient_local: true
+    warn_rate: 0.0
+    error_rate: 0.0
+    timeout: 0.0
+
+- module: control
+  mode: [online, planning_simulation]
+  type: autonomous
+  args:
+    node_name_suffix: trajectory_follower_control_cmd
+    topic: /control/trajectory_follower/control_cmd
+    topic_type: autoware_auto_control_msgs/msg/AckermannControlCommand
+    best_effort: false
+    transient_local: false
+    warn_rate: 5.0
+    error_rate: 1.0
+    timeout: 1.0
+
+- module: control
+  mode: [online, planning_simulation]
+  type: autonomous
+  args:
+    node_name_suffix: control_command_control_cmd
+    topic: /control/command/control_cmd
+    topic_type: autoware_auto_control_msgs/msg/AckermannControlCommand
+    best_effort: false
+    transient_local: false
+    warn_rate: 5.0
+    error_rate: 1.0
+    timeout: 1.0
+
+- module: vehicle
+  mode: [online, planning_simulation]
+  type: autonomous
+  args:
+    node_name_suffix: vehicle_status_velocity_status
+    topic: /vehicle/status/velocity_status
+    topic_type: autoware_auto_vehicle_msgs/msg/VelocityReport
+    best_effort: false
+    transient_local: false
+    warn_rate: 5.0
+    error_rate: 1.0
+    timeout: 1.0
+
+- module: vehicle
+  mode: [online, planning_simulation]
+  type: autonomous
+  args:
+    node_name_suffix: vehicle_status_steering_status
+    topic: /vehicle/status/steering_status
+    topic_type: autoware_auto_vehicle_msgs/msg/SteeringReport
+    best_effort: false
+    transient_local: false
+    warn_rate: 5.0
+    error_rate: 1.0
+    timeout: 1.0
