@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+ Use this version if the network interface, e.g. router does not support multicasting or the machines are not communicating properly.
+ Replace the IP Addresses with your robot and visualization machine IPs.
+ To use: export CYCLONEDDS_URI=file:///absolute/path/to/cyclonedds_config_static.xml
+         cp 10-cyclone-max.conf /etc/sysctl.d/10-cyclone-max.conf
+         sudo sysctl -p /etc/sysctl.d/60_cyclonedds.conf (to update the parameters)
+ -->
+<CycloneDDS xmlns="https://cdds.io/config" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://cdds.io/config https://raw.githubusercontent.com/eclipse-cyclonedds/cyclonedds/master/etc/cyclonedds.xsd">
+    <Domain Id="any">
+        <General>
+            <Interfaces>
+                <NetworkInterface autodetermine="true" priority="default" multicast="false" />
+            </Interfaces>
+            <AllowMulticast>false</AllowMulticast>
+            <EnableMulticastLoopback>false</EnableMulticastLoopback>
+            <MaxMessageSize>65500B</MaxMessageSize>
+        </General>
+<!--        <Discovery>-->
+<!--            <EnableTopicDiscoveryEndpoints>true</EnableTopicDiscoveryEndpoints>-->
+<!--        </Discovery>-->
+	<Discovery>
+		<Peers>
+			<Peer address="192.168.2.141"/>  <!-- gosling2 -->
+			<Peer address="192.168.2.194"/> <!-- DigitalStorm -->
+			<Peer address="192.168.2.193"/>  <!-- gosling2 -->
+		</Peers>
+		<ParticipantIndex>auto</ParticipantIndex>
+		<MaxAutoParticipantIndex>200</MaxAutoParticipantIndex>
+	</Discovery>
+        <Internal>
+            <SocketReceiveBufferSize min="10MB"/>
+            <Watermarks>
+                <WhcHigh>500kB</WhcHigh>
+            </Watermarks>
+        </Internal>
+    </Domain>
+</CycloneDDS>
