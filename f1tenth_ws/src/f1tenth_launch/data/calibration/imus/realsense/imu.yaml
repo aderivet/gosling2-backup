@@ -1,0 +1,16 @@
+# w_tilde(t) = w(t) + b(t) + n(t), b=bias/offset, n=gaussian noise
+# w_tilde is the measured acceleration/angular velocity, w is the true value
+# n(t) = N(0, sigma ^ 2). sigma=standard_deviation
+
+# Generated using: https://github.com/CruxDevStuff/allan_ros2
+# Explanation: https://github.com/ethz-asl/kalibr/wiki/IMU-Noise-Model#the-noise-model-parameters-in-kalibr | https://github.com/autowarefoundation/autoware.universe/tree/main/sensing/imu_corrector
+#Accelerometer
+accelerometer_noise_density: 0.0009734696726986871  # Noise density (continuous-time). Accelerometer white noise
+accelerometer_random_walk: 0.00011200044630914794   # Bias random walk
+
+#Gyroscope
+gyroscope_noise_density: 0.00020342293732754507   # Noise density (continuous-time)
+gyroscope_random_walk: 1.6767200027913728e-05   # Bias random walk
+
+rostopic: '/camera/camera/imu'
+update_rate: 400.0 #Make sure this is correct

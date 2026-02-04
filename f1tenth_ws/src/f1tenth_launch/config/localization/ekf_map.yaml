@@ -1,0 +1,167 @@
+/**:
+  ros__parameters:
+    use_sim_time: false
+    frequency: 10.0
+    sensor_timeout: 0.13
+    two_d_mode: true
+    transform_time_offset: 0.0
+    transform_timeout: 0.0
+    print_diagnostics: false
+    debug: false
+#    debug_out_file: /path/to/debug/file.txt
+    permit_corrected_publication: false
+    publish_acceleration: true
+    publish_tf: true
+
+    reset_on_time_jump: true  # # If the filter sees a jump back in time, the filter is reset (convenient for testing with rosbags!)
+
+    #smooth_lagged_data: True  # for VIO, AMCL and laserscan matching
+    #history_length: 2.0
+
+    map_frame: map
+    odom_frame: odom
+    base_link_frame: base_link
+    world_frame: map
+
+    # Pose topics: AMCL, RTABMap,
+    pose0: /amcl_pose
+    pose0_config: [ true,  true,  false,
+                    false, false, true,
+                    false, false, false,
+                    false, false, false,
+                    false, false, false ]
+    pose0_differential: false  # true
+    pose0_relative: true
+    pose0_queue_size: 2
+#    pose0_rejection_threshold: 2.0
+    pose0_nodelay: false
+
+    pose1: /localization_pose  # /rtabmap/localization_pose
+    pose1_config: [ true,  true,  true,
+                    true, true, true,
+                    false, false, false,
+                    false, false, false,
+                    false, false, false ]
+    pose1_differential: true
+    pose1_relative: false
+    pose1_queue_size: 1
+    #    pose1_rejection_threshold: 2.0
+    pose1_nodelay: false
+
+    pose2: /slam_toolbox/pose
+    pose2_config: [ true,  true,  false,
+                    false, false, true,
+                    false, false, false,
+                    false, false, false,
+                    false, false, false ]
+    pose2_differential: true
+    pose2_relative: false
+    pose2_queue_size: 2
+#    pose2_rejection_threshold: 2.0
+    pose2_nodelay: false
+
+#      twist0: example/twist
+#      twist0_config: [ false, false, false,
+#                       false, false, false,
+#                       true,  true,  true,
+#                       false, false, false,
+#                       false, false, false ]
+#      twist0_queue_size: 3
+#      twist0_rejection_threshold: 2.0
+#      twist0_nodelay: false
+#
+    odom0: /vehicle/vesc_odom
+    odom0_config: [ false, false, false,  # false, false,
+                    false, false, false,  # , , true
+                    true, true, true,
+                    true, true, false,
+                    false, false, false ]
+    odom0_queue_size: 10
+    odom0_nodelay: false
+    odom0_differential: false
+    odom0_relative: true
+
+    odom1: /visual_slam/tracking/odometry  # /odom/rtabmap_icp, /odom/rf2o
+    odom1_config: [true,  true,  true,  # true, true,
+                   true, true, true,
+                   false, false, false,
+                   false, false, false,
+                   false, false, false ]
+    odom1_queue_size: 2
+    odom1_differential: true
+    odom1_relative: false
+    #odom1_pose_rejection_threshold: 1.0
+    #odom1_twist_rejection_threshold: 0.5
+
+    imu0: /vehicle/sensors/imu/raw  # /vehicle/sensors/imu/raw, /vehicle/sensors/imu/data
+    imu0_config: [false, false, false,
+                  true,  true,  true,  # false x3
+                  false, false, false,
+                  false,  false,  false,  # false, false, true
+                  false,  false,  false]  # true, true,
+    imu0_nodelay: false
+    imu0_differential: true
+    imu0_relative: true
+    imu0_queue_size: 10
+    imu0_remove_gravitational_acceleration: true
+    imu0_gravitational_acceleration: 10.035 # 9.806665
+
+    imu1: /camera/camera/imu/filtered
+    imu1_config: [ false, false, false,
+                   false,  false,  false,  # false, false, true
+                   false, false, false,
+                   true,  true,  true,  # false, true, false
+                   true,  true,  true]  # false, true, false
+    imu1_nodelay: false
+    imu1_differential: false  # false
+    imu1_relative: true  # true because of orientation/yaw drift. Also, if there is no magnetometer/compass then initial yaw is useless.
+    imu1_queue_size: 15
+    imu1_remove_gravitational_acceleration: true  # false
+    imu1_gravitational_acceleration: 9.87 # 9.80665
+
+    #initial_state: [0.0,  0.0,  0.0,
+    #                0.0,  0.0,  0.0,
+    #                0.0,  0.0,  0.0,
+    #                0.0,  0.0,  0.0,
+    #                0.0,  0.0,  0.0]
+    use_control: false
+    stamped_control: false
+    control_timeout: 0.2
+    control_config: [true, false, false, false, false, true]
+#    acceleration_limits: [10.0, 0.0, 0.0, 0.0, 0.0, 3.0]
+#    deceleration_limits: [10.0, 0.0, 0.0, 0.0, 0.0, 3.0]
+#    acceleration_gains: [3.0, 0.0, 0.0, 0.0, 0.0, 3.0]
+#    deceleration_gains: [3.0, 0.0, 0.0, 0.0, 0.0, 3.0]
+
+    process_noise_covariance: [ 0.05, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                0.0,    0.05, 0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                0.0,    0.0,    0.06, 0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                0.0,    0.0,    0.0,    0.03, 0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                0.0,    0.0,    0.0,    0.0,    0.03, 0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                0.0,    0.0,    0.0,    0.0,    0.0,    0.06, 0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.025, 0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.025, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.04, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.01, 0.0,    0.0,    0.0,    0.0,    0.0,
+                                0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.01, 0.0,    0.0,    0.0,    0.0,
+                                0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.02, 0.0,    0.0,    0.0,
+                                0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.01, 0.0,    0.0,
+                                0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.01, 0.0,
+                                0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.015 ]
+
+    initial_estimate_covariance: [ 1e-9, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                   0.0,    1e-9, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                   0.0,    0.0,    1e-9, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                   0.0,    0.0,    0.0,    1e-9, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                   0.0,    0.0,    0.0,    0.0,    1e-9, 0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                   0.0,    0.0,    0.0,    0.0,    0.0,    1e-9, 0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    1e-9, 0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    1e-9, 0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    1e-9, 0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    1e-9,  0.0,     0.0,     0.0,    0.0,    0.0,
+                                   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     1e-9,  0.0,     0.0,    0.0,    0.0,
+                                   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     1e-9,  0.0,    0.0,    0.0,
+                                   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     1e-9, 0.0,    0.0,
+                                   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    1e-9, 0.0,
+                                   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    1e-9 ]
+
