@@ -1,0 +1,36 @@
+ topics:
+ -
+    topic: ${NAMESPACE}/vehicle/vesc_odom
+    type: nav_msgs/msg/Odometry
+    queue_size: 1
+ -
+    topic: ${NAMESPACE}/joy
+    type: sensor_msgs/msg/Joy
+    queue_size: 1
+ -
+    topic: ${NAMESPACE}/teleop
+    type: ackermann_msgs/msg/AckermannDriveStamped
+    queue_size: 1
+ -
+    topic: ${NAMESPACE}/drive
+    type: ackermann_msgs/msg/AckermannDriveStamped
+    queue_size: 1
+ -
+    topic: ${NAMESPACE}/cmd_vel
+    type: geometry_msgs/msg/Twist
+    queue_size: 1
+ -
+    topic: ${NAMESPACE}/camera/imu
+    type: sensor_msgs/msg/Imu
+    queue_size: 1
+ -
+    topic: ${NAMESPACE}/odometry/local
+    type: nav_msgs/msg/Odometry
+    queue_size: 1
+ -
+    topic: ${NAMESPACE}/tf_static
+    type: tf2_msgs/msg/TFMessage
+    queue_size: 1
+    qos:
+      history: keep_all
+      durability: transient_local

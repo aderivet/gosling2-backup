@@ -1,0 +1,40 @@
+ topics:
+ -
+    topic: /gosling2/vehicle/vesc_odom
+    type: nav_msgs/msg/Odometry
+    queue_size: 1
+ -
+    topic: /gosling2/joy
+    type: sensor_msgs/msg/Joy
+    queue_size: 1
+ -
+    topic: /gosling2/teleop
+    type: ackermann_msgs/msg/AckermannDriveStamped
+    queue_size: 1
+ -
+    topic: /gosling2/drive
+    type: ackermann_msgs/msg/AckermannDriveStamped
+    queue_size: 1
+ -
+    topic: /gosling2/cmd_vel
+    type: geometry_msgs/msg/Twist
+    queue_size: 1
+ -
+    topic: /gosling2/joy
+    type: sensor_msgs/msg/Joy
+    queue_size: 1
+ -
+    topic: /gosling2/camera/imu
+    type: sensor_msgs/msg/Imu
+    queue_size: 1
+ -
+    topic: /gosling2/odometry/local
+    type: nav_msgs/msg/Odometry
+    queue_size: 1
+ -
+    topic: /gosling2/tf_static
+    type: tf2_msgs/msg/TFMessage
+    queue_size: 1
+    qos:
+      history: keep_all
+      durability: transient_local

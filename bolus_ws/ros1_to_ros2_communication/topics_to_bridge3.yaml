@@ -1,0 +1,40 @@
+ topics:
+ -
+    topic: /gosling3/vehicle/vesc_odom
+    type: nav_msgs/msg/Odometry
+    queue_size: 1
+ -
+    topic: joy
+    type: sensor_msgs/msg/Joy
+    queue_size: 1
+ -
+    topic: teleop
+    type: ackermann_msgs/msg/AckermannDriveStamped
+    queue_size: 1
+ -
+    topic: drive
+    type: ackermann_msgs/msg/AckermannDriveStamped
+    queue_size: 1
+ -
+    topic: cmd_vel
+    type: geometry_msgs/msg/Twist
+    queue_size: 1
+ -
+    topic: joy
+    type: sensor_msgs/msg/Joy
+    queue_size: 1
+ -
+    topic: camera/imu
+    type: sensor_msgs/msg/Imu
+    queue_size: 1
+ -
+    topic: odometry/local
+    type: nav_msgs/msg/Odometry
+    queue_size: 1
+ -
+    topic: tf_static
+    type: tf2_msgs/msg/TFMessage
+    queue_size: 1
+    qos:
+      history: keep_all
+      durability: transient_local

@@ -1,0 +1,98 @@
+# Usage: docker build -t privvyledge/ros:foxy-ros1-bridge -f docker/Dockerfile.ros1_bridge .
+# Run:  docker run --rm -ti --net host --env ROS_MASTER_URI=http://192.168.2.193:11311 -v ../ros1_to_ros2_communication:/ros1_to_ros2_communication privvyledge/ros:foxy-ros1-bridge
+
+## or
+#xhost +local:root && \
+#  jetson-containers run -v /dev:/dev -v ${HOME}/shared_dir:/mnt/shared_dir \
+#  -v ${HOME}/data:/mnt/data --ipc host --env="QT_X11_NO_MITSHM=1" --privileged \
+#   -v ./ros1_to_ros2_communication:/ros1_to_ros2_communication \
+#  --env ROS_MASTER_URI=http://192.168.2.193:11311 \
+#  privvyledge/ros:foxy-ros1-bridge /bin/bash && \
+#  xhost -local:root
+
+# ROS1 Noetic and ROS2 Foxy with ROS1 bridge
+FROM ros:foxy-ros-base-focal
+
+ENV SHELL=/bin/bash
+SHELL ["/bin/bash", "-c"]
+
+# setup keys
+RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
+
+# setup sources.list
+RUN echo "deb http://packages.ros.org/ros/ubuntu focal main" > /etc/apt/sources.list.d/ros1-latest.list
+
+ENV ROS1_DISTRO=noetic
+ENV ROS2_DISTRO=foxy
+
+# install ROS1 packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ros-${ROS1_DISTRO}-ros-comm \
+    ros-${ROS1_DISTRO}-roscpp-tutorials \
+    ros-${ROS1_DISTRO}-rospy-tutorials \
+    ros-${ROS1_DISTRO}-nav-msgs \
+    ros-${ROS1_DISTRO}-ackermann-msgs \
+    ros-${ROS1_DISTRO}-sensor-msgs \
+#    ros-${ROS1_DISTRO}-tf \
+    ros-${ROS1_DISTRO}-tf2-tools \
+#    ros-${ROS1_DISTRO}-tf-transformations \
+    ros-${ROS1_DISTRO}-rqt-tf-tree \
+    ros-${ROS1_DISTRO}-tf2-geometry-msgs \
+    ros-${ROS1_DISTRO}-twist-mux \
+    ros-${ROS1_DISTRO}-teleop-twist-joy \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+
+# install ROS2 packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+#    ros-${ROS2_DISTRO}-ros1-bridge \
+    ros-${ROS2_DISTRO}-demo-nodes-cpp \
+    ros-${ROS2_DISTRO}-demo-nodes-py \
+    ros-${ROS2_DISTRO}-nav-msgs \
+    ros-${ROS2_DISTRO}-ackermann-msgs \
+    ros-${ROS2_DISTRO}-sensor-msgs \
+    ros-${ROS2_DISTRO}-rmw-fastrtps-cpp \
+    ros-${ROS2_DISTRO}-rmw-cyclonedds-cpp \
+    ros-${ROS2_DISTRO}-tf2-tools \
+    ros-${ROS2_DISTRO}-tf-transformations \
+    ros-${ROS2_DISTRO}-rqt-tf-tree \
+    ros-${ROS2_DISTRO}-tf2-geometry-msgs \
+    ros-${ROS2_DISTRO}-twist-mux \
+    ros-${ROS2_DISTRO}-joy-linux \
+    ros-${ROS2_DISTRO}-teleop-twist-joy \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+
+# build ROS1 bridge (necessary to add support for Ackermann messages and others. They must be installed first)
+# https://industrial-training-master.readthedocs.io/en/foxy/_source/session7/ROS1-ROS2-bridge.html#build-the-ros1-bridge
+RUN mkdir -p ~/ros1_bridge_ws/src && \
+    cd ~/ros1_bridge_ws/src && \
+    git clone -b ${ROS2_DISTRO} https://github.com/ros2/ros1_bridge.git && \
+    source /opt/ros/${ROS1_DISTRO}/setup.bash && \
+    source /opt/ros/${ROS2_DISTRO}/setup.bash && \
+#    source ~/catkin_ws_to_bridge/devel/setup.bash && \
+#    source ~/colcon_ws/install/setup.bash && \
+    cd ~/ros1_bridge_ws && \
+    colcon build --packages-select ros1_bridge --cmake-force-configure --cmake-args -DBUILD_TESTING=FALSE
+
+# Link to allow sourcing
+RUN rm /bin/sh && ln -s /bin/bash /bin/sh
+
+# Alias for sourcing
+# sr1 -> source ros 1, sr2 -> source ros 2
+RUN echo "alias sr1='source /opt/ros/${ROS1_DISTRO}/setup.bash'" >> /etc/bash.bashrc
+RUN echo "alias sr2='source /opt/ros/${ROS2_DISTRO}/setup.bash'" >> /etc/bash.bashrc
+RUN echo "alias sr3='source ~/ros1_bridge_ws/install/setup.bash'" >> /etc/bash.bashrc
+
+# setup entrypoint
+COPY ./ros_entrypoint.sh /
+RUN chmod +x /ros_entrypoint.sh
+ENTRYPOINT ["/ros_entrypoint.sh"]
+
+# In the container, run
+# `sr1 && rosparam load /ros1_to_ros2_communication/topics_to_bridge.yaml && sr2 && sr3 &&  ros2 run ros1_bridge dynamic_bridge --print-pairs` to see the available bridged topics
+# `sr1 && rosparam load /ros1_to_ros2_communication/topics_to_bridge.yaml && sr2 && sr3 &&  ros2 run ros1_bridge dynamic_bridge` to see the available bridged topics
+CMD ["bash"]

@@ -1,0 +1,96 @@
+# Usage: docker compose up
+services:
+    # ROS
+    ros-master:
+        image: ros:noetic-ros-core
+        environment:
+            - "ROS_MASTER_URI=http://192.168.2.193:11311"
+            - "ROS_IP=192.168.2.193"
+        container_name: roscore
+        tty: true        # docker run -t
+        network_mode: "host"
+        restart: always
+        command: stdbuf -o L roscore
+
+    # ROS + ROS 2
+    bridge:
+        image: privvyledge/ros:foxy-ros1-bridge
+        environment:
+            - "ROS_MASTER_URI=http://192.168.2.193:11311"
+            - "ROS_IP=192.168.2.193"
+        network_mode: "host"
+        restart: on-failure
+        command: stdbuf -o L bash -c "source /opt/ros/noetic/setup.bash && rosparam load /topics_to_bridge.yaml && source /opt/ros/foxy/setup.bash && source ~/ros1_bridge_ws/install/setup.bash && ros2 run ros1_bridge parameter_bridge"
+        volumes:
+            - ../topics_to_bridge.yaml:/topics_to_bridge.yaml:ro
+
+    ## ROS + ROS 2 (bridges all topics. Not recommended as it could be expensive depending on how many topics are running)
+    #bridge:
+    #    image: privvyledge/ros:foxy-ros1-bridge
+    #    environment:
+    #        - "ROS_MASTER_URI=http://192.168.2.193:11311"
+    #        - "ROS_IP=192.168.2.193"
+    #    network_mode: "host"
+    #    restart: on-failure
+    #    command: stdbuf -o L bash -c "source /opt/ros/noetic/setup.bash && source /opt/ros/foxy/setup.bash && source ~/ros1_bridge_ws/install/setup.bash && ros2 run ros1_bridge dynamic_bridge --bridge-all-topics"
+
+#   # ROS 1 (Example: this just runs rostopic list but can run any ros1 node)
+#    ros1:
+#       image: ros:noetic-ros-core
+#       environment:
+#           - "ROS_MASTER_URI=http://192.168.2.193:11311"
+#           - "ROS_IP=192.168.2.193"
+#       tty: true        # docker run -t
+#       depends_on:
+#           - ros-master
+#       network_mode: "host"
+#       restart: on-failure
+#       command: rostopic list
+
+    # ROS 2
+    ros2:
+        image: privvyledge/f1tenth:humble-latest
+        privileged: true  # Equivalent to --privileged
+        ipc: host  # Equivalent to --ipc=host
+        environment:
+            - "ROS_LOCALHOST_ONLY=0"  # to enable multimachine communication
+            - "ROS_DOMAIN_ID=0"  # set to limit the scope of the DDS discovery
+            - "DISPLAY=$DISPLAY"
+            - "QT_X11_NO_MITSHM=1" #fix some QT bugs
+            - "NVIDIA_VISIBLE_DEVICES=all"
+            - "NVIDIA_DRIVER_CAPABILITIES=compute,utility,video,graphics"
+            - "VEHICLE_NAME=$VEHICLE_NAME"
+            - "USER=$VEHICLE_NAME"
+        network_mode: "host"
+        runtime: nvidia  # Use NVIDIA runtime for GPU support. Use deploy.resources.reservations.devices instead for x86
+#        deploy:
+#            resources:
+#                reservations:
+#                    devices:
+#                        - driver: nvidia
+#                          count: all  # Use all GPUs; set a number to limit
+#                          capabilities: [ gpu ]
+        restart: on-failure
+        command: stdbuf -o L ros2 launch f1tenth_launch teleop.launch.py launch_localization:=False launch_vehicle:=True launch_sensors:=False use_f1tenth_namespace:=True
+        volumes:
+          - /dev:/dev  # Mounts /dev to access host devices
+          - ${HOME}/data:/mnt/data
+          - /tmp/.X11-unix:/tmp/.X11-unix:rw
+          - /etc/group:/etc/group:ro
+          - /etc/passwd:/etc/passwd:ro
+          - /etc/shadow:/etc/shadow:ro
+          - /etc/sudoers:/etc/sudoers:ro
+          - /etc/sudoers.d:/etc/sudoers.d:ro
+          - $HOME/.Xauthority:/home/admin/.Xauthority:rw
+
+#    talker:
+#        image: ros:noetic-ros-core
+#        depends_on:
+#            - ros-master
+#        environment:
+#            - "ROS_MASTER_URI=http://192.168.2.193:11311"
+#            - "ROS_IP=192.168.2.193"
+#        command: stdbuf -o L rostopic pub /chatter std_msgs/String "hello" -r 1
+#        networks:
+#            - ros
+#        restart: always
